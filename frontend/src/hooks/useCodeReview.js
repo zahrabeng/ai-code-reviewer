@@ -17,11 +17,25 @@ export const useCodeReview = () => {
     setHasStarted(true);
     setSections(EMPTY_SECTIONS);
 
+    let rafId = null;
+    let pending = EMPTY_SECTIONS;
+
+    const onSectionsUpdate = (next) => {
+      pending = next;
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        setSections(pending);
+        rafId = null;
+      });
+    };
+
     try {
-      await streamReview(code, language, setSections);
+      await streamReview(code, language, onSectionsUpdate);
+      setSections(pending);
     } catch (err) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
+      if (rafId) cancelAnimationFrame(rafId);
       setIsStreaming(false);
     }
   }, [code, language, isStreaming]);

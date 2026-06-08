@@ -26,13 +26,24 @@ const CARD_COLORS = {
   },
 };
 
-const ReviewCard = ({ sectionKey, title, content, isStreaming }) => {
+const proseClasses = `prose prose-sm dark:prose-invert max-w-none
+  prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+  prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:leading-relaxed
+  prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-strong:font-semibold
+  prose-code:text-indigo-600 dark:prose-code:text-indigo-300
+  prose-code:bg-gray-100 dark:prose-code:bg-gray-800
+  prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+  prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800
+  prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-700
+  prose-headings:text-gray-900 dark:prose-headings:text-gray-100`;
+
+const ReviewCard = ({ sectionKey, title, content, isStreaming, isActive }) => {
   const [copied, setCopied] = useState(false);
   const colors = CARD_COLORS[sectionKey] ?? CARD_COLORS.bugs;
-  const hasContent = content && content.trim().length > 0;
+  const showPlainText = isStreaming && isActive;
 
   const handleCopy = async () => {
-    if (!hasContent) return;
+    if (!content?.trim()) return;
     try {
       await navigator.clipboard.writeText(content);
       setCopied(true);
@@ -43,8 +54,7 @@ const ReviewCard = ({ sectionKey, title, content, isStreaming }) => {
   };
 
   return (
-    <motion.div
-      layout
+    <div
       role="region"
       aria-label={title}
       className={`rounded-xl border ${colors.border} ${colors.bg} overflow-hidden transition-colors duration-200`}
@@ -53,16 +63,16 @@ const ReviewCard = ({ sectionKey, title, content, isStreaming }) => {
                       border-b border-gray-200/80 dark:border-gray-800/60">
         <div className="flex items-center gap-2">
           <div
-            className={`w-1.5 h-1.5 rounded-full ${colors.dot} ${isStreaming && hasContent ? 'animate-pulse' : ''}`}
+            className={`w-1.5 h-1.5 rounded-full ${colors.dot} ${isActive ? 'animate-pulse' : ''}`}
             aria-hidden="true"
           />
           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{title}</span>
         </div>
         <motion.button
           onClick={handleCopy}
-          disabled={!hasContent}
-          whileHover={hasContent ? { scale: 1.08 } : {}}
-          whileTap={hasContent ? { scale: 0.92 } : {}}
+          disabled={!content?.trim()}
+          whileHover={content?.trim() ? { scale: 1.08 } : {}}
+          whileTap={content?.trim() ? { scale: 0.92 } : {}}
           aria-label={copied ? `${title} copied to clipboard` : `Copy ${title} to clipboard`}
           className="flex items-center gap-1 text-xs px-2 py-1 rounded-md
                      text-gray-400 dark:text-gray-500
@@ -84,38 +94,19 @@ const ReviewCard = ({ sectionKey, title, content, isStreaming }) => {
         </motion.button>
       </div>
 
-      <motion.div layout className="px-4 py-3 min-h-[60px]">
-        {hasContent ? (
-          <div className="prose prose-sm dark:prose-invert max-w-none
-                          prose-p:text-gray-700 dark:prose-p:text-gray-300
-                          prose-p:leading-relaxed
-                          prose-li:text-gray-700 dark:prose-li:text-gray-300
-                          prose-li:leading-relaxed
-                          prose-strong:text-gray-900 dark:prose-strong:text-gray-100
-                          prose-strong:font-semibold
-                          prose-code:text-indigo-600 dark:prose-code:text-indigo-300
-                          prose-code:bg-gray-100 dark:prose-code:bg-gray-800
-                          prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
-                          prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800
-                          prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-700
-                          prose-headings:text-gray-900 dark:prose-headings:text-gray-100">
+      <div className="px-4 py-3">
+        {showPlainText ? (
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
+            {content}
+            <span className="inline-block w-0.5 h-4 ml-0.5 bg-indigo-500 dark:bg-indigo-400 animate-pulse align-text-bottom" aria-hidden="true" />
+          </p>
+        ) : (
+          <div className={proseClasses}>
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
-        ) : (
-          <div className="flex flex-col gap-2 py-2">
-            {[80, 60, 90].map((w, i) => (
-              <motion.div
-                key={i}
-                className="h-2.5 rounded bg-gray-200 dark:bg-gray-800"
-                style={{ width: `${w}%` }}
-                animate={{ opacity: [0.4, 0.7, 0.4] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
-              />
-            ))}
-          </div>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

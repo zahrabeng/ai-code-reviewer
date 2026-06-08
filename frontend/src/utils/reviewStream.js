@@ -12,6 +12,18 @@ export const EMPTY_SECTIONS = {
   score: '',
 };
 
+export const SECTION_ORDER = ['bugs', 'improvements', 'explanation', 'score'];
+
+export const getActiveSectionKey = (sections, isStreaming) => {
+  if (!isStreaming) return null;
+
+  let active = null;
+  for (const key of SECTION_ORDER) {
+    if (sections[key]?.trim()) active = key;
+  }
+  return active;
+};
+
 export const parseReviewSections = (rawText) => {
   const sections = { ...EMPTY_SECTIONS };
   const keys = SECTION_HEADERS.map((h) => h.key);

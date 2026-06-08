@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import ReviewCard from './ReviewCard.jsx';
 import ErrorBanner from './ErrorBanner.jsx';
+import { getActiveSectionKey } from '../utils/reviewStream.js';
 
 const SECTIONS = [
   { key: 'bugs',         title: '🐛 Bugs & Issues' },
@@ -11,40 +12,50 @@ const SECTIONS = [
 ];
 
 const cardVariants = {
-  hidden:  { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -10, transition: { duration: 0.2 } },
+  hidden:  { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+  exit:    { opacity: 0, transition: { duration: 0.15 } },
 };
 
-const EmptyState = () => {
-  return (
-    <motion.div
-      key="empty"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center h-full text-center px-8 py-20"
-    >
-      <div className="w-16 h-16 rounded-2xl
-                      bg-gray-100 dark:bg-gray-900
-                      border border-gray-200 dark:border-gray-800
-                      flex items-center justify-center mb-5">
-        <Sparkles size={30} className="text-gray-400 dark:text-gray-600" aria-hidden="true" />
-      </div>
-      <p className="text-gray-500 dark:text-gray-500 text-sm font-medium">
-        Your AI review will appear here
-      </p>
-      <p className="text-gray-400 dark:text-gray-700 text-xs mt-1.5 max-w-xs leading-relaxed">
-        Paste your code in the left panel, select a language, and click{' '}
-        <span className="text-indigo-500 dark:text-indigo-400">Review Code</span>.
-      </p>
-    </motion.div>
-  );
-};
+const EmptyState = () => (
+  <motion.div
+    key="empty"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="flex flex-col items-center justify-center h-full text-center px-8 py-20"
+  >
+    <div className="w-16 h-16 rounded-2xl
+                    bg-gray-100 dark:bg-gray-900
+                    border border-gray-200 dark:border-gray-800
+                    flex items-center justify-center mb-5">
+      <Sparkles size={30} className="text-gray-400 dark:text-gray-600" aria-hidden="true" />
+    </div>
+    <p className="text-gray-500 text-sm font-medium">Your AI review will appear here</p>
+    <p className="text-gray-400 dark:text-gray-700 text-xs mt-1.5 max-w-xs leading-relaxed">
+      Paste your code in the left panel, select a language, and click{' '}
+      <span className="text-indigo-500 dark:text-indigo-400">Review Code</span>.
+    </p>
+  </motion.div>
+);
+
+const StreamingState = () => (
+  <motion.div
+    key="streaming"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="flex flex-col items-center justify-center py-20 gap-3"
+  >
+    <Loader2 size={24} className="text-indigo-500 dark:text-indigo-400 animate-spin" aria-hidden="true" />
+    <p className="text-sm text-gray-500 dark:text-gray-400">Analyzing your code…</p>
+  </motion.div>
+);
 
 const ReviewOutput = ({ sections, isStreaming, error, hasStarted, onDismissError }) => {
-  const hasAnyContent = SECTIONS.some((s) => sections[s.key]?.trim().length > 0);
-  const showCards = hasStarted && (hasAnyContent || isStreaming);
+  const activeKey = getActiveSectionKey(sections, isStreaming);
+  const visibleSections = SECTIONS.filter((s) => sections[s.key]?.trim().length > 0);
+  const hasAnyContent = visibleSections.length > 0;
 
   return (
     <div className="flex flex-col h-full min-h-[50vh] lg:min-h-0">
@@ -90,36 +101,33 @@ const ReviewOutput = ({ sections, isStreaming, error, hasStarted, onDismissError
         <AnimatePresence mode="wait">
           {!hasStarted ? (
             <EmptyState key="empty" />
-          ) : showCards ? (
+          ) : isStreaming && !hasAnyContent ? (
+            <StreamingState key="streaming" />
+          ) : hasAnyContent ? (
             <motion.div
               key="cards"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
               className="flex flex-col gap-4"
             >
               <AnimatePresence initial={false}>
-                {SECTIONS.map((section, index) => {
-                  const content = sections[section.key];
-                  const shouldShow = isStreaming || (content && content.trim().length > 0);
-                  return shouldShow ? (
-                    <motion.div
-                      key={section.key}
-                      variants={cardVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      transition={{ delay: index * 0.06 }}
-                    >
-                      <ReviewCard
-                        sectionKey={section.key}
-                        title={section.title}
-                        content={content}
-                        isStreaming={isStreaming}
-                      />
-                    </motion.div>
-                  ) : null;
-                })}
+                {visibleSections.map((section) => (
+                  <motion.div
+                    key={section.key}
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <ReviewCard
+                      sectionKey={section.key}
+                      title={section.title}
+                      content={sections[section.key]}
+                      isStreaming={isStreaming}
+                      isActive={section.key === activeKey}
+                    />
+                  </motion.div>
+                ))}
               </AnimatePresence>
             </motion.div>
           ) : null}
