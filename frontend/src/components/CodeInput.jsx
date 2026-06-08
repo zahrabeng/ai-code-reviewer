@@ -1,11 +1,18 @@
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Trash2, Loader2 } from 'lucide-react';
+import CodeMirror from '@uiw/react-codemirror';
+import { vscodeDark, vscodeLight } from '@uiw/codemirror-theme-vscode';
 import { LANGUAGES, CODE_MAX_LENGTH } from '@Utils/languages.js';
+import { getCodeMirrorLanguage } from '../utils/codemirrorLanguages.js';
+import { maxLengthExtension } from '../utils/codemirrorMaxLength.js';
+import { fillEditorTheme } from '../utils/codemirrorLayout.js';
 
 const CodeInput = ({
   code,
   language,
   isStreaming,
+  theme,
   onCodeChange,
   onLanguageChange,
   onReview,
@@ -19,10 +26,46 @@ const CodeInput = ({
   const isAtLimit = charsRemaining <= 0;
   const selectedLabel = LANGUAGES.find((l) => l.value === language)?.label ?? 'code';
 
+  const extensions = useMemo(
+    () => [
+      getCodeMirrorLanguage(language),
+      maxLengthExtension(CODE_MAX_LENGTH),
+      fillEditorTheme,
+    ],
+    [language]
+  );
+  const editorTheme = theme === 'dark' ? vscodeDark : vscodeLight;
+  const containerRef = useRef(null);
+  const [editorHeight, setEditorHeight] = useState(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateHeight = () => {
+      requestAnimationFrame(() => {
+        const height = el.getBoundingClientRect().height;
+        if (height > 0) {
+          setEditorHeight(Math.floor(height));
+        }
+      });
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleChange = (value) => {
+    onCodeChange(value.slice(0, CODE_MAX_LENGTH));
+  };
+
   return (
-    <div className="flex flex-col h-full min-h-[50vh] lg:min-h-0">
+    <div className="flex flex-col h-full min-h-0">
       <div
-        className="flex items-center justify-between px-4 py-3
+        className="flex items-center justify-between px-4 py-3 shrink-0
                    border-b border-gray-200 dark:border-gray-800"
         role="toolbar"
         aria-label="Code input controls"
@@ -108,39 +151,38 @@ const CodeInput = ({
         </div>
       </div>
 
-      <div className="flex-1 relative">
-        <label htmlFor="code-textarea" className="sr-only">
-          {selectedLabel} code input
-        </label>
-        <textarea
-          id="code-textarea"
-          value={code}
-          onChange={(e) => onCodeChange(e.target.value)}
-          disabled={isStreaming}
-          spellCheck={false}
-          maxLength={CODE_MAX_LENGTH}
-          placeholder={`Paste your ${selectedLabel} here…`}
-          aria-label={`${selectedLabel} code input`}
-          aria-describedby="char-count"
-          className="absolute inset-0 w-full h-full
-                     bg-white dark:bg-gray-950
-                     text-gray-800 dark:text-gray-200
-                     text-sm font-mono resize-none p-4 leading-relaxed
-                     placeholder:text-gray-400 dark:placeholder:text-gray-700
-                     focus:outline-none scrollbar-thin
-                     disabled:opacity-60 disabled:cursor-not-allowed
-                     transition-colors"
-        />
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden relative">
+        <div className="absolute inset-0 overflow-hidden">
+          <CodeMirror
+            value={code}
+            height={editorHeight ? `${editorHeight}px` : '100%'}
+            theme={editorTheme}
+            extensions={extensions}
+            onChange={handleChange}
+            editable={!isStreaming}
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLine: true,
+              highlightActiveLineGutter: true,
+              foldGutter: false,
+            }}
+            className="code-editor h-full"
+            aria-labelledby="code-panel-label"
+            aria-describedby="char-count"
+            placeholder={`Paste your ${selectedLabel} here…`}
+          />
+        </div>
+
         <div
           id="char-count"
           aria-live="polite"
           aria-atomic="true"
-          className={`absolute bottom-3 right-3 text-xs pointer-events-none select-none transition-colors ${
+          className={`absolute bottom-3 right-5 z-10 text-xs pointer-events-none select-none transition-colors ${
             isAtLimit
               ? 'text-red-500 dark:text-red-400 font-medium'
               : isNearLimit
               ? 'text-yellow-600 dark:text-yellow-400'
-              : 'text-gray-400 dark:text-gray-700'
+              : 'text-gray-400 dark:text-gray-600'
           }`}
         >
           {hasCode

@@ -58,7 +58,7 @@ const ReviewOutput = ({ sections, isStreaming, error, hasStarted, onDismissError
   const hasAnyContent = visibleSections.length > 0;
 
   return (
-    <div className="flex flex-col h-full min-h-[50vh] lg:min-h-0">
+    <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 px-4 py-3
                       border-b border-gray-200 dark:border-gray-800">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
