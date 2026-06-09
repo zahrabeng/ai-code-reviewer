@@ -2,32 +2,87 @@
 
 A real-time AI-powered code review tool. Paste any code snippet, pick a language, and receive a structured review from Claude covering bugs, improvements, an explanation, and an overall score — streamed live to the browser.
 
+## Live Demo
+
+Try the deployed app: [https://ai-code-reviewer-frontend-qjqm.onrender.com/](https://ai-code-reviewer-frontend-qjqm.onrender.com/)
+
+Paste code, select a language, and click **Review Code** to see the four-panel streaming review in action.
+
 ## Stack
 
-| Layer    | Technology |
-|----------|-----------|
-| Backend  | Node.js · Express · Anthropic SDK · SSE |
-| Frontend | React · Vite · Tailwind CSS · Framer Motion |
-| AI Model | `claude-sonnet-4-6` |
+
+| Layer    | Technology                                               |
+| -------- | -------------------------------------------------------- |
+| Backend  | Node.js · Express · Anthropic SDK · SSE                  |
+| Frontend | React · Vite · Tailwind CSS · Framer Motion · CodeMirror |
+| AI Model | `claude-sonnet-4-6` (configurable via `ANTHROPIC_MODEL`) |
+
 
 ## Project Structure
 
 ```
 ai-code-reviewer/
-├── backend/          # Express API server
-│   ├── src/index.js
+├── Utils/
+│   └── languages.js              # Shared language list + CODE_MAX_LENGTH
+├── backend/
+│   ├── config/
+│   │   └── env.js                # Env validation + config values
+│   ├── src/
+│   │   ├── index.js              # Server entry point
+│   │   ├── app.js                # Express app + middleware + routes
+│   │   ├── controllers/
+│   │   │   └── review.controller.js
+│   │   ├── routes/
+│   │   │   └── review.routes.js
+│   │   ├── services/
+│   │   │   └── review.service.js # Anthropic streaming
+│   │   ├── middlewares/
+│   │   │   ├── rateLimit.middleware.js
+│   │   │   └── notFound.middleware.js
+│   │   ├── validators/
+│   │   │   └── review.schema.js
+│   │   ├── utils/
+│   │   │   └── sseErrors.js
+│   │   └── prompts/
+│   │       └── systemPrompt.js
 │   ├── .env.example
 │   └── package.json
-└── frontend/         # React SPA
+└── frontend/
+    ├── public/
+    │   └── favicon.svg
     ├── src/
     │   ├── App.jsx
+    │   ├── hooks/
+    │   │   ├── useCodeReview.js
+    │   │   └── useTheme.js
+    │   ├── utils/
+    │   │   ├── reviewStream.js
+    │   │   ├── codemirrorLanguages.js
+    │   │   ├── codemirrorLayout.js
+    │   │   └── codemirrorMaxLength.js
     │   └── components/
-    │       ├── CodeInput.jsx
+    │       ├── CodeInput.jsx     # CodeMirror editor
     │       ├── ReviewOutput.jsx
     │       ├── ReviewCard.jsx
     │       └── ErrorBanner.jsx
     └── package.json
 ```
+
+## Architecture
+
+```
+CodeInput  →  POST /api/review (SSE)  →  review.controller
+                                              ↓
+                                        review.service  →  Anthropic API
+                                              ↓
+                                        SSE chunks  →  ReviewOutput (4 cards)
+```
+
+1. The user pastes code in `CodeInput` and selects a language.
+2. The frontend sends a `POST` to `/api/review` and opens an SSE stream.
+3. `review.controller` validates input, then delegates to `review.service`.
+4. `review.service` streams Claude's response chunk-by-chunk back through SSE.
+5. The frontend parses the four markdown sections and renders them as animated cards in `ReviewOutput`.
 
 ## Setup
 
@@ -41,6 +96,8 @@ cp backend/.env.example backend/.env
 ```
 
 ### 2. Install dependencies
+
+This is a monorepo with separate `package.json` files — install each app independently:
 
 ```bash
 # Backend
@@ -60,14 +117,13 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
-
 ## Security
 
 - **Helmet** — secure HTTP response headers
 - **CORS** — restricted to the configured frontend origin (`ALLOWED_ORIGIN` env var)
 - **Rate limiting** — 20 requests / IP / 15 min on `/api/review`
 - **Body size cap** — requests over 50 KB are rejected before reaching the AI
-- **Input validation** — language must be in an allow-list; code is capped at 20 000 characters (Zod schema)
+- **Input validation** — language must be in an allow-list; code is capped at 5,000 characters (Zod schema)
 - **Sanitised errors** — stack traces and raw SDK errors are never forwarded to the client
 - **API key guard** — server refuses to start if `ANTHROPIC_API_KEY` is missing
+
