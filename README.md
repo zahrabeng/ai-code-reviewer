@@ -4,7 +4,7 @@ A real-time AI-powered code review tool. Paste any code snippet, pick a language
 
 ## Live Demo
 
-Try the deployed app: [https://ai-code-reviewer-frontend-qjqm.onrender.com/](https://ai-code-reviewer-frontend-qjqm.onrender.com/)
+Deployed app: [https://ai-code-reviewer-frontend-qjqm.onrender.com/](https://ai-code-reviewer-frontend-qjqm.onrender.com/)
 
 Paste code, select a language, and click **Review Code** to see the four-panel streaming review in action.
 
@@ -22,50 +22,23 @@ Paste code, select a language, and click **Review Code** to see the four-panel s
 
 ```
 ai-code-reviewer/
-├── Utils/
-│   └── languages.js              # Shared language list + CODE_MAX_LENGTH
+├── Utils/                  # Shared constants (languages, code length limit)
 ├── backend/
-│   ├── config/
-│   │   └── env.js                # Env validation + config values
-│   ├── src/
-│   │   ├── index.js              # Server entry point
-│   │   ├── app.js                # Express app + middleware + routes
-│   │   ├── controllers/
-│   │   │   └── review.controller.js
-│   │   ├── routes/
-│   │   │   └── review.routes.js
-│   │   ├── services/
-│   │   │   └── review.service.js # Anthropic streaming
-│   │   ├── middlewares/
-│   │   │   ├── rateLimit.middleware.js
-│   │   │   └── notFound.middleware.js
-│   │   ├── validators/
-│   │   │   └── review.schema.js
-│   │   ├── utils/
-│   │   │   └── sseErrors.js
-│   │   └── prompts/
-│   │       └── systemPrompt.js
-│   ├── .env.example
-│   └── package.json
+│   ├── config/             # Environment validation
+│   └── src/
+│       ├── controllers/
+│       ├── middlewares/
+│       ├── prompts/
+│       ├── routes/
+│       ├── services/
+│       ├── utils/
+│       └── validators/
 └── frontend/
-    ├── public/
-    │   └── favicon.svg
-    ├── src/
-    │   ├── App.jsx
-    │   ├── hooks/
-    │   │   ├── useCodeReview.js
-    │   │   └── useTheme.js
-    │   ├── utils/
-    │   │   ├── reviewStream.js
-    │   │   ├── codemirrorLanguages.js
-    │   │   ├── codemirrorLayout.js
-    │   │   └── codemirrorMaxLength.js
-    │   └── components/
-    │       ├── CodeInput.jsx     # CodeMirror editor
-    │       ├── ReviewOutput.jsx
-    │       ├── ReviewCard.jsx
-    │       └── ErrorBanner.jsx
-    └── package.json
+    ├── public/             # Static assets (favicon)
+    └── src/
+        ├── components/
+        ├── hooks/
+        └── utils/
 ```
 
 ## Architecture
@@ -107,7 +80,7 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-### 3. Run (two terminals)
+### 3. Run
 
 ```bash
 # Terminal 1 — backend (port 3001)
