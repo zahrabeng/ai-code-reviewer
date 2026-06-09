@@ -52,8 +52,9 @@ export const parseReviewSections = (rawText) => {
   return sections;
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 export const streamReview = async (code, language, onSectionsUpdate) => {
-  const response = await fetch('/api/review', {
+  const response = await fetch(`${API_BASE_URL}/api/review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, language }),
