@@ -7,6 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.js',
+  },
   resolve: {
     alias: {
       '@Utils': path.resolve(__dirname, '../Utils'),
